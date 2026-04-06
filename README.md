@@ -32,6 +32,8 @@ What the script does:
 - Detects a GPS device automatically, or uses `GPS_DEVICE` if set.
 - Stops old `gpsd`, Kismet, and CYT processes before starting fresh ones.
 - Writes runtime logs and PID files into the runtime log directory.
+- When a graphical desktop session is available, opens a terminal running `cgps`.
+- When a graphical desktop session is available, opens the Kismet UI in the default browser.
 
 Default paths:
 
@@ -44,6 +46,7 @@ Optional environment variables:
 - `CYT_PROJECT_DIR` overrides the project folder.
 - `CYT_RUNTIME_DIR` overrides where runtime logs and PID files are stored.
 - `KISMET_LOG_DIR` overrides where Kismet logs are written.
+- `KISMET_URL` overrides the Kismet browser URL.
 - `GPS_DEVICE` forces a specific GPS device such as `/dev/ttyACM0`.
 
 Examples:
@@ -53,10 +56,16 @@ Examples:
 ./startup.sh cli
 ./startup.sh none
 GPS_DEVICE=/dev/ttyUSB0 ./startup.sh gui
+KISMET_URL=http://pi400.local:2501 ./startup.sh gui
 ```
 
-After startup, Kismet is available at:
+After startup:
 
+- `startup.sh` tries to open a new terminal running `cgps`.
+- `startup.sh` tries to open the Kismet UI in your browser.
+- If no graphical session is available, such as over SSH, those desktop launch steps are skipped.
+
+Kismet is available at:
 - `http://localhost:2501`
 - `http://pi400.local:2501`
 
