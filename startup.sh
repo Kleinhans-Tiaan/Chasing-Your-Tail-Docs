@@ -6,6 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="${CYT_PROJECT_DIR:-$HOME/Chasing-Your-Tail-NG}"
 RUNTIME_DIR="${CYT_RUNTIME_DIR:-$PROJECT_DIR/runtime_logs}"
 KISMET_LOG_DIR="${KISMET_LOG_DIR:-$HOME/kismet_logs}"
+KISMET_URL="${KISMET_URL:-http://localhost:2501}"
 
 usage() {
   cat <<'EOF'
@@ -20,8 +21,46 @@ Optional environment variables:
   CYT_PROJECT_DIR   Override the project folder
   CYT_RUNTIME_DIR   Override where startup logs are written
   KISMET_LOG_DIR    Override the Kismet log directory
+  KISMET_URL        Override the Kismet browser URL
   GPS_DEVICE        Force a GPS device path such as /dev/ttyACM0
 EOF
+}
+
+has_graphical_session() {
+  [[ -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" ]]
+}
+
+launch_cgps_terminal() {
+  if ! command -v cgps >/dev/null 2>&1; then
+    echo "cgps is not installed. Skipping GPS terminal launch." >&2
+    return
+  fi
+
+  if command -v x-terminal-emulator >/dev/null 2>&1; then
+    nohup x-terminal-emulator -e cgps >/dev/null 2>&1 &
+  elif command -v lxterminal >/dev/null 2>&1; then
+    nohup lxterminal -e cgps >/dev/null 2>&1 &
+  elif command -v xterm >/dev/null 2>&1; then
+    nohup xterm -e cgps >/dev/null 2>&1 &
+  else
+    echo "No supported terminal emulator found for launching cgps." >&2
+    return
+  fi
+
+  echo "Opened cgps in a new terminal."
+}
+
+launch_kismet_browser() {
+  if command -v xdg-open >/dev/null 2>&1; then
+    nohup xdg-open "$KISMET_URL" >/dev/null 2>&1 &
+  elif command -v sensible-browser >/dev/null 2>&1; then
+    nohup sensible-browser "$KISMET_URL" >/dev/null 2>&1 &
+  else
+    echo "No browser launcher found. Open $KISMET_URL manually." >&2
+    return
+  fi
+
+  echo "Opened Kismet in the browser."
 }
 
 case "$MODE" in
@@ -104,6 +143,13 @@ elif [[ "$MODE" == "cli" ]]; then
   )
 fi
 
+if has_graphical_session; then
+  launch_cgps_terminal
+  launch_kismet_browser
+else
+  echo "No graphical session detected. Skipping cgps terminal and browser launch." >&2
+fi
+
 cat <<EOF
 
 Startup complete.
@@ -120,6 +166,6 @@ Useful checks:
   ls "$KISMET_LOG_DIR"
 
 Kismet UI:
-  http://localhost:2501
+  $KISMET_URL
   http://pi400.local:2501
 EOF
